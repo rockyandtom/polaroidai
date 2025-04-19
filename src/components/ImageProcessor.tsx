@@ -4,6 +4,57 @@ import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { compressImage, createDownloadLink } from '@/lib/utils';
 
+// 调试信息类型定义
+interface DebugInfo {
+  uploadStarted?: string;
+  uploadComplete?: string;
+  uploadResponse?: any;
+  uploadError?: {
+    status?: number;
+    statusText?: string;
+    code?: number;
+    message?: string;
+    data?: any;
+  };
+  fileInfo?: {
+    size: number;
+    type: string;
+  };
+  generateStarted?: string;
+  generateComplete?: string;
+  generateResponse?: any;
+  generateError?: {
+    status?: number;
+    statusText?: string;
+    code?: number;
+    message?: string;
+    data?: any;
+  };
+  imageId?: string;
+  taskId?: string;
+  pollingStarted?: string;
+  lastPolling?: string;
+  statusResponse?: any;
+  statusError?: {
+    status?: number;
+    statusText?: string;
+    message?: string;
+    data?: any;
+  };
+  currentStatus?: string;
+  currentProgress?: number;
+  completionTime?: string;
+  resultComplete?: string;
+  resultResponse?: any;
+  resultError?: {
+    status?: number;
+    statusText?: string;
+    message?: string;
+    data?: any;
+  };
+  successImage?: string;
+}
+
 export default function ImageProcessor() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -12,7 +63,7 @@ export default function ImageProcessor() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,7 +111,7 @@ export default function ImageProcessor() {
       formData.append('file', blob, 'image.jpg');
       
       // 记录调试信息
-      setDebugInfo(prev => ({
+      setDebugInfo((prev: DebugInfo | null) => ({
         ...prev,
         uploadStarted: new Date().toISOString(),
         fileInfo: {
@@ -76,7 +127,7 @@ export default function ImageProcessor() {
       
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json().catch(() => null);
-        setDebugInfo(prev => ({
+        setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           uploadError: {
             status: uploadResponse.status,
@@ -90,14 +141,14 @@ export default function ImageProcessor() {
       const uploadData = await uploadResponse.json();
       
       // 记录上传结果
-      setDebugInfo(prev => ({
+      setDebugInfo((prev: DebugInfo | null) => ({
         ...prev,
         uploadComplete: new Date().toISOString(),
         uploadResponse: uploadData
       }));
       
       if (uploadData.code !== 0) {
-        setDebugInfo(prev => ({
+        setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           uploadError: {
             code: uploadData.code,
@@ -110,7 +161,7 @@ export default function ImageProcessor() {
       const imageId = uploadData.data.fileName;
       
       // 记录生成开始信息
-      setDebugInfo(prev => ({
+      setDebugInfo((prev: DebugInfo | null) => ({
         ...prev,
         generateStarted: new Date().toISOString(),
         imageId
@@ -127,7 +178,7 @@ export default function ImageProcessor() {
       
       if (!generateResponse.ok) {
         const errorData = await generateResponse.json().catch(() => null);
-        setDebugInfo(prev => ({
+        setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           generateError: {
             status: generateResponse.status,
@@ -141,14 +192,14 @@ export default function ImageProcessor() {
       const generateData = await generateResponse.json();
       
       // 记录生成响应
-      setDebugInfo(prev => ({
+      setDebugInfo((prev: DebugInfo | null) => ({
         ...prev,
         generateComplete: new Date().toISOString(),
         generateResponse: generateData
       }));
       
       if (generateData.code !== 0) {
-        setDebugInfo(prev => ({
+        setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           generateError: {
             code: generateData.code,
@@ -161,7 +212,7 @@ export default function ImageProcessor() {
       const taskId = generateData.data.taskId;
       
       // 记录轮询开始
-      setDebugInfo(prev => ({
+      setDebugInfo((prev: DebugInfo | null) => ({
         ...prev,
         pollingStarted: new Date().toISOString(),
         taskId
@@ -196,14 +247,14 @@ export default function ImageProcessor() {
         
         // 记录状态轮询结果
         const responseData = await statusResponse.json();
-        setDebugInfo(prev => ({
+        setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           lastPolling: new Date().toISOString(),
           statusResponse: responseData
         }));
         
         if (!statusResponse.ok) {
-          setDebugInfo(prev => ({
+          setDebugInfo((prev: DebugInfo | null) => ({
             ...prev,
             statusError: {
               status: statusResponse.status,
@@ -218,7 +269,7 @@ export default function ImageProcessor() {
         setProgress(statusData.progress || 0);
         
         // 记录当前状态
-        setDebugInfo(prev => ({
+        setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           currentStatus: statusData.status,
           currentProgress: statusData.progress
@@ -229,7 +280,7 @@ export default function ImageProcessor() {
           clearInterval(pollIntervalRef.current!);
           
           // 记录完成时间
-          setDebugInfo(prev => ({
+          setDebugInfo((prev: DebugInfo | null) => ({
             ...prev,
             completionTime: new Date().toISOString()
           }));
@@ -245,7 +296,7 @@ export default function ImageProcessor() {
           
           if (!resultResponse.ok) {
             const errorData = await resultResponse.json().catch(() => null);
-            setDebugInfo(prev => ({
+            setDebugInfo((prev: DebugInfo | null) => ({
               ...prev,
               resultError: {
                 status: resultResponse.status,
@@ -259,7 +310,7 @@ export default function ImageProcessor() {
           const resultData = await resultResponse.json();
           
           // 记录结果
-          setDebugInfo(prev => ({
+          setDebugInfo((prev: DebugInfo | null) => ({
             ...prev,
             resultComplete: new Date().toISOString(),
             resultResponse: resultData
@@ -270,7 +321,7 @@ export default function ImageProcessor() {
             setIsProcessing(false);
             
             // 记录成功图像URL
-            setDebugInfo(prev => ({
+            setDebugInfo((prev: DebugInfo | null) => ({
               ...prev,
               successImage: resultData.images[0]
             }));
@@ -278,7 +329,7 @@ export default function ImageProcessor() {
             // 添加到 gallery 的逻辑可以在这里
             saveToGallery(resultData.images[0]);
           } else {
-            setDebugInfo(prev => ({
+            setDebugInfo((prev: DebugInfo | null) => ({
               ...prev,
               resultError: {
                 message: 'No images returned',
@@ -288,7 +339,7 @@ export default function ImageProcessor() {
             throw new Error('No images returned');
           }
         } else if (statusData.status === 'ERROR') {
-          setDebugInfo(prev => ({
+          setDebugInfo((prev: DebugInfo | null) => ({
             ...prev,
             statusError: {
               message: 'Task processing failed',
