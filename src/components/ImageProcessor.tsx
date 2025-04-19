@@ -11,6 +11,8 @@ export default function ImageProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,6 +51,7 @@ export default function ImageProcessor() {
       setError(null);
       setIsProcessing(true);
       setProgress(0);
+      setDebugInfo(null);
       
       // 上传图像
       const formData = new FormData();
@@ -56,21 +59,62 @@ export default function ImageProcessor() {
       const blob = await response.blob();
       formData.append('file', blob, 'image.jpg');
       
+      // 记录调试信息
+      setDebugInfo(prev => ({
+        ...prev,
+        uploadStarted: new Date().toISOString(),
+        fileInfo: {
+          size: blob.size,
+          type: blob.type
+        }
+      }));
+      
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
       
       if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json().catch(() => null);
+        setDebugInfo(prev => ({
+          ...prev,
+          uploadError: {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            data: errorData
+          }
+        }));
         throw new Error('Failed to upload image');
       }
       
       const uploadData = await uploadResponse.json();
+      
+      // 记录上传结果
+      setDebugInfo(prev => ({
+        ...prev,
+        uploadComplete: new Date().toISOString(),
+        uploadResponse: uploadData
+      }));
+      
       if (uploadData.code !== 0) {
+        setDebugInfo(prev => ({
+          ...prev,
+          uploadError: {
+            code: uploadData.code,
+            message: uploadData.msg
+          }
+        }));
         throw new Error(uploadData.msg || 'Upload failed');
       }
       
       const imageId = uploadData.data.fileName;
+      
+      // 记录生成开始信息
+      setDebugInfo(prev => ({
+        ...prev,
+        generateStarted: new Date().toISOString(),
+        imageId
+      }));
       
       // 发起 AI 任务
       const generateResponse = await fetch('/api/generate', {
@@ -82,22 +126,53 @@ export default function ImageProcessor() {
       });
       
       if (!generateResponse.ok) {
+        const errorData = await generateResponse.json().catch(() => null);
+        setDebugInfo(prev => ({
+          ...prev,
+          generateError: {
+            status: generateResponse.status,
+            statusText: generateResponse.statusText,
+            data: errorData
+          }
+        }));
         throw new Error('Failed to start generation process');
       }
       
       const generateData = await generateResponse.json();
+      
+      // 记录生成响应
+      setDebugInfo(prev => ({
+        ...prev,
+        generateComplete: new Date().toISOString(),
+        generateResponse: generateData
+      }));
+      
       if (generateData.code !== 0) {
+        setDebugInfo(prev => ({
+          ...prev,
+          generateError: {
+            code: generateData.code,
+            message: generateData.msg
+          }
+        }));
         throw new Error(generateData.msg || 'Generation failed');
       }
       
       const taskId = generateData.data.taskId;
+      
+      // 记录轮询开始
+      setDebugInfo(prev => ({
+        ...prev,
+        pollingStarted: new Date().toISOString(),
+        taskId
+      }));
       
       // 开始轮询结果
       startPolling(taskId);
     } catch (err) {
       console.error('Error generating Polaroid:', err);
       setIsProcessing(false);
-      setError('Failed to generate image. Please try again.');
+      setError(`Failed to generate image: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
   
@@ -119,16 +194,45 @@ export default function ImageProcessor() {
           body: JSON.stringify({ taskId })
         });
         
+        // 记录状态轮询结果
+        const responseData = await statusResponse.json();
+        setDebugInfo(prev => ({
+          ...prev,
+          lastPolling: new Date().toISOString(),
+          statusResponse: responseData
+        }));
+        
         if (!statusResponse.ok) {
+          setDebugInfo(prev => ({
+            ...prev,
+            statusError: {
+              status: statusResponse.status,
+              statusText: statusResponse.statusText,
+              data: responseData
+            }
+          }));
           throw new Error('Failed to check status');
         }
         
-        const statusData = await statusResponse.json();
+        const statusData = responseData;
         setProgress(statusData.progress || 0);
+        
+        // 记录当前状态
+        setDebugInfo(prev => ({
+          ...prev,
+          currentStatus: statusData.status,
+          currentProgress: statusData.progress
+        }));
         
         // 任务完成
         if (statusData.status === 'COMPLETED') {
           clearInterval(pollIntervalRef.current!);
+          
+          // 记录完成时间
+          setDebugInfo(prev => ({
+            ...prev,
+            completionTime: new Date().toISOString()
+          }));
           
           // 获取结果
           const resultResponse = await fetch('/api/result', {
@@ -140,27 +244,63 @@ export default function ImageProcessor() {
           });
           
           if (!resultResponse.ok) {
+            const errorData = await resultResponse.json().catch(() => null);
+            setDebugInfo(prev => ({
+              ...prev,
+              resultError: {
+                status: resultResponse.status,
+                statusText: resultResponse.statusText,
+                data: errorData
+              }
+            }));
             throw new Error('Failed to get result');
           }
           
           const resultData = await resultResponse.json();
           
+          // 记录结果
+          setDebugInfo(prev => ({
+            ...prev,
+            resultComplete: new Date().toISOString(),
+            resultResponse: resultData
+          }));
+          
           if (resultData.images && resultData.images.length > 0) {
             setProcessedImage(resultData.images[0]);
             setIsProcessing(false);
             
+            // 记录成功图像URL
+            setDebugInfo(prev => ({
+              ...prev,
+              successImage: resultData.images[0]
+            }));
+            
             // 添加到 gallery 的逻辑可以在这里
             saveToGallery(resultData.images[0]);
           } else {
+            setDebugInfo(prev => ({
+              ...prev,
+              resultError: {
+                message: 'No images returned',
+                data: resultData
+              }
+            }));
             throw new Error('No images returned');
           }
         } else if (statusData.status === 'ERROR') {
+          setDebugInfo(prev => ({
+            ...prev,
+            statusError: {
+              message: 'Task processing failed',
+              data: statusData
+            }
+          }));
           throw new Error('Task processing failed');
         }
       } catch (err) {
         console.error('Error in polling:', err);
         setIsProcessing(false);
-        setError('Failed to generate image. Please try again.');
+        setError(`Failed to generate image: ${err instanceof Error ? err.message : String(err)}`);
         clearInterval(pollIntervalRef.current!);
       }
     };
@@ -338,6 +478,20 @@ export default function ImageProcessor() {
         {error && (
           <div className="mt-8 p-4 bg-red-100 text-red-700 rounded-lg text-center">
             {error}
+            <button
+              onClick={() => setDebugMode(!debugMode)}
+              className="ml-4 underline text-sm"
+            >
+              {debugMode ? '隐藏调试信息' : '显示调试信息'}
+            </button>
+          </div>
+        )}
+        
+        {/* 调试信息 */}
+        {debugMode && debugInfo && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-lg overflow-auto max-h-96">
+            <h3 className="text-lg font-semibold mb-2">调试信息</h3>
+            <pre className="text-xs">{JSON.stringify(debugInfo, null, 2)}</pre>
           </div>
         )}
         

@@ -1,28 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
+import logger from '@/lib/logger';
+import { withApiMonitoring, logEnvironmentVariables } from '@/lib/api-middleware';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.runninghub.cn';
 const API_KEY = process.env.RUNNINGHUB_API_KEY || process.env.NEXT_PUBLIC_RUNNINGHUB_API_KEY;
 
-export async function POST(request: NextRequest) {
+/**
+ * 处理状态请求的核心逻辑
+ */
+async function handleStatus(request: NextRequest) {
   try {
+    // 检查API配置
+    if (!API_KEY) {
+      logger.error('状态API：未配置API密钥');
+      return NextResponse.json(
+        { error: 'API密钥未配置，请检查环境变量' },
+        { status: 500 }
+      );
+    }
+
+    // 获取请求体
     const body = await request.json();
     const { taskId } = body;
     
     if (!taskId) {
+      logger.warn('状态API：请求中没有任务ID');
       return NextResponse.json(
         { error: 'No task ID provided' },
         { status: 400 }
       );
     }
     
-    console.log('Checking status for task:', taskId);
+    logger.info('检查任务状态', { taskId });
     
-    // 请求数据
+    // 构建请求数据
     const requestData = {
       apiKey: API_KEY,
       taskId
     };
+    
+    // 记录API请求信息
+    logger.debug('状态API：请求配置', {
+      url: `${API_BASE_URL}/task/openapi/status`,
+      taskId
+    });
     
     // 发送请求到 RunningHub
     const response = await axios.post(
@@ -37,13 +59,15 @@ export async function POST(request: NextRequest) {
       }
     );
     
-    console.log('Status response:', JSON.stringify(response.data, null, 2));
+    logger.debug('状态API：原始响应', response.data);
     
     let status = 'UNKNOWN';
     let progress = 0;
     
     // 处理状态信息
     if (response.data.code === 0) {
+      logger.info('状态API：响应成功', response.data);
+      
       if (typeof response.data.data === 'string') {
         if (response.data.data === 'SUCCESS' || response.data.data === 'COMPLETED') {
           status = 'COMPLETED';
@@ -61,24 +85,48 @@ export async function POST(request: NextRequest) {
         progress = response.data.data.progress || 0;
       }
     } else {
+      logger.error('状态API：响应错误', response.data);
       return NextResponse.json(
         { error: response.data.msg || 'Failed to get status' },
         { status: 500 }
       );
     }
     
-    console.log('Processed status:', status, 'Progress:', progress);
+    logger.info('状态API：处理后状态', { status, progress });
     
     // 返回处理后的状态
     return NextResponse.json({ status, progress });
   } catch (error: any) {
-    console.error('Error checking status:', error);
-    console.error('Error details:', error.response?.data || 'No response data');
+    // 详细记录错误
+    logger.error('状态API：处理失败', error);
+    
+    if (error.response) {
+      logger.error('状态API：服务器响应错误', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    }
+    
+    // 返回错误响应
     return NextResponse.json(
-      { error: 'Failed to check status', details: error.message },
-      { status: 500 }
+      { 
+        error: 'Failed to check status', 
+        details: error.message,
+        response: error.response?.data || null 
+      },
+      { status: error.response?.status || 500 }
     );
   }
+}
+
+/**
+ * 状态API处理函数
+ */
+export async function POST(request: NextRequest) {
+  logger.info('收到状态请求');
+  return withApiMonitoring(request, handleStatus, '状态API');
 }
 
 export const dynamic = 'force-dynamic';
