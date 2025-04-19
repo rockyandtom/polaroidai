@@ -121,7 +121,7 @@ export default function ImageProcessor() {
       }));
       
       // 尝试上传，最多重试两次
-      let uploadResponse;
+      let uploadResponse: Response | undefined;
       let uploadAttempts = 0;
       const MAX_UPLOAD_ATTEMPTS = 3;
       
@@ -195,7 +195,7 @@ export default function ImageProcessor() {
       }));
       
       // 尝试发起AI任务，最多重试两次
-      let generateResponse;
+      let generateResponse: Response | undefined;
       let generateAttempts = 0;
       const MAX_GENERATE_ATTEMPTS = 3;
       
