@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.runninghub.cn';
-const API_KEY = process.env.RUNNINGHUB_API_KEY;
+const API_KEY = process.env.RUNNINGHUB_API_KEY || process.env.NEXT_PUBLIC_RUNNINGHUB_API_KEY;
 
 export async function POST(request: NextRequest) {
   if (!request.body) {
@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    console.log('Uploading file:', file.name, 'Size:', file.size);
+    
     // 转换为 FormData 发送到 RunningHub API
     const apiFormData = new FormData();
     apiFormData.append('file', file);
@@ -34,17 +36,21 @@ export async function POST(request: NextRequest) {
       apiFormData,
       {
         headers: {
-          'Host': 'www.runninghub.cn'
+          'Host': 'www.runninghub.cn',
+          'Accept': 'application/json'
         }
       }
     );
     
+    console.log('Upload response:', response.data);
+    
     // 返回响应
     return NextResponse.json(response.data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error processing upload:', error);
+    console.error('Error details:', error.response?.data || 'No response data');
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: 'Failed to upload file', details: error.message },
       { status: 500 }
     );
   }

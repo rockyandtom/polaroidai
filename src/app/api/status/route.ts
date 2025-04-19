@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.runninghub.cn';
-const API_KEY = process.env.RUNNINGHUB_API_KEY;
+const API_KEY = process.env.RUNNINGHUB_API_KEY || process.env.NEXT_PUBLIC_RUNNINGHUB_API_KEY;
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,20 +16,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    console.log('Checking status for task:', taskId);
+    
+    // 请求数据
+    const requestData = {
+      apiKey: API_KEY,
+      taskId
+    };
+    
     // 发送请求到 RunningHub
     const response = await axios.post(
       `${API_BASE_URL}/task/openapi/status`,
-      {
-        apiKey: API_KEY,
-        taskId
-      },
+      requestData,
       {
         headers: {
           'Content-Type': 'application/json',
-          'Host': 'www.runninghub.cn'
+          'Host': 'www.runninghub.cn',
+          'Accept': 'application/json'
         }
       }
     );
+    
+    console.log('Status response:', JSON.stringify(response.data, null, 2));
     
     let status = 'UNKNOWN';
     let progress = 0;
@@ -59,12 +67,15 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    console.log('Processed status:', status, 'Progress:', progress);
+    
     // 返回处理后的状态
     return NextResponse.json({ status, progress });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking status:', error);
+    console.error('Error details:', error.response?.data || 'No response data');
     return NextResponse.json(
-      { error: 'Failed to check status' },
+      { error: 'Failed to check status', details: error.message },
       { status: 500 }
     );
   }
