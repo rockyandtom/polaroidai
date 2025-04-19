@@ -63,6 +63,7 @@ async function handleStatus(request: NextRequest) {
     
     let status = 'UNKNOWN';
     let progress = 0;
+    let errorMsg = null;
     
     // 处理状态信息
     if (response.data.code === 0) {
@@ -77,25 +78,50 @@ async function handleStatus(request: NextRequest) {
           progress = 50;
         } else if (response.data.data === 'FAILED' || response.data.data === 'ERROR') {
           status = 'ERROR';
+          errorMsg = 'Task processing failed on server side';
+          logger.error('状态API：任务处理失败', { taskId, serverStatus: response.data.data });
         } else {
           status = response.data.data;
         }
       } else if (response.data.data && typeof response.data.data === 'object') {
         status = response.data.data.status || 'UNKNOWN';
         progress = response.data.data.progress || 0;
+        
+        // 检查错误状态和详细信息
+        if (status === 'ERROR' || status === 'FAILED') {
+          errorMsg = response.data.data.message || response.data.data.error || 'Task processing failed';
+          logger.error('状态API：任务处理失败（对象形式）', { 
+            taskId, 
+            serverStatus: status,
+            errorDetails: response.data.data
+          });
+        }
       }
     } else {
       logger.error('状态API：响应错误', response.data);
       return NextResponse.json(
-        { error: response.data.msg || 'Failed to get status' },
+        { 
+          error: response.data.msg || 'Failed to get status',
+          details: response.data
+        },
         { status: 500 }
       );
     }
     
-    logger.info('状态API：处理后状态', { status, progress });
+    logger.info('状态API：处理后状态', { status, progress, errorMsg });
     
     // 返回处理后的状态
-    return NextResponse.json({ status, progress });
+    const responseData = { status, progress };
+    
+    // 如果是错误状态，添加额外信息
+    if (status === 'ERROR') {
+      return NextResponse.json({
+        ...responseData,
+        error: errorMsg || 'Unknown error occurred during processing'
+      });
+    }
+    
+    return NextResponse.json(responseData);
   } catch (error: any) {
     // 详细记录错误
     logger.error('状态API：处理失败', error);

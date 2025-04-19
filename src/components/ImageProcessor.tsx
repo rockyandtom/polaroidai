@@ -120,22 +120,49 @@ export default function ImageProcessor() {
         }
       }));
       
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
+      // 尝试上传，最多重试两次
+      let uploadResponse;
+      let uploadAttempts = 0;
+      const MAX_UPLOAD_ATTEMPTS = 3;
       
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json().catch(() => null);
+      while (uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
+        try {
+          uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+          
+          // 如果成功，跳出循环
+          if (uploadResponse.ok) break;
+          
+          // 否则等待一秒后重试
+          uploadAttempts++;
+          if (uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
+            console.warn(`上传失败，正在重试 (${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (error) {
+          uploadAttempts++;
+          if (uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
+            console.warn(`上传异常，正在重试 (${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS})...`, error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            throw error;
+          }
+        }
+      }
+      
+      if (!uploadResponse || !uploadResponse.ok) {
+        const errorData = await uploadResponse?.json().catch(() => null);
         setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           uploadError: {
-            status: uploadResponse.status,
-            statusText: uploadResponse.statusText,
+            status: uploadResponse?.status,
+            statusText: uploadResponse?.statusText,
             data: errorData
           }
         }));
-        throw new Error('Failed to upload image');
+        throw new Error('图片上传失败，请重试');
       }
       
       const uploadData = await uploadResponse.json();
@@ -155,7 +182,7 @@ export default function ImageProcessor() {
             message: uploadData.msg
           }
         }));
-        throw new Error(uploadData.msg || 'Upload failed');
+        throw new Error(uploadData.msg || '上传失败');
       }
       
       const imageId = uploadData.data.fileName;
@@ -167,26 +194,52 @@ export default function ImageProcessor() {
         imageId
       }));
       
-      // 发起 AI 任务
-      const generateResponse = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ imageId })
-      });
+      // 尝试发起AI任务，最多重试两次
+      let generateResponse;
+      let generateAttempts = 0;
+      const MAX_GENERATE_ATTEMPTS = 3;
       
-      if (!generateResponse.ok) {
-        const errorData = await generateResponse.json().catch(() => null);
+      while (generateAttempts < MAX_GENERATE_ATTEMPTS) {
+        try {
+          generateResponse = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ imageId })
+          });
+          
+          // 如果成功，跳出循环
+          if (generateResponse.ok) break;
+          
+          // 否则等待一秒后重试
+          generateAttempts++;
+          if (generateAttempts < MAX_GENERATE_ATTEMPTS) {
+            console.warn(`生成请求失败，正在重试 (${generateAttempts}/${MAX_GENERATE_ATTEMPTS})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (error) {
+          generateAttempts++;
+          if (generateAttempts < MAX_GENERATE_ATTEMPTS) {
+            console.warn(`生成请求异常，正在重试 (${generateAttempts}/${MAX_GENERATE_ATTEMPTS})...`, error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            throw error;
+          }
+        }
+      }
+      
+      if (!generateResponse || !generateResponse.ok) {
+        const errorData = await generateResponse?.json().catch(() => null);
         setDebugInfo((prev: DebugInfo | null) => ({
           ...prev,
           generateError: {
-            status: generateResponse.status,
-            statusText: generateResponse.statusText,
+            status: generateResponse?.status,
+            statusText: generateResponse?.statusText,
             data: errorData
           }
         }));
-        throw new Error('Failed to start generation process');
+        throw new Error('无法启动图像生成流程，请重试');
       }
       
       const generateData = await generateResponse.json();
@@ -206,7 +259,7 @@ export default function ImageProcessor() {
             message: generateData.msg
           }
         }));
-        throw new Error(generateData.msg || 'Generation failed');
+        throw new Error(generateData.msg || '生成失败');
       }
       
       const taskId = generateData.data.taskId;
@@ -223,7 +276,14 @@ export default function ImageProcessor() {
     } catch (err) {
       console.error('Error generating Polaroid:', err);
       setIsProcessing(false);
-      setError(`Failed to generate image: ${err instanceof Error ? err.message : String(err)}`);
+      
+      // 提供更友好的错误信息
+      let errorMessage = '处理过程中出错';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     }
   };
   
@@ -233,6 +293,9 @@ export default function ImageProcessor() {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
     }
+    
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
     
     const pollStatus = async () => {
       try {
@@ -262,8 +325,19 @@ export default function ImageProcessor() {
               data: responseData
             }
           }));
-          throw new Error('Failed to check status');
+          
+          // 重试逻辑
+          retryCount++;
+          if (retryCount <= MAX_RETRIES) {
+            console.warn(`状态检查失败，正在重试 (${retryCount}/${MAX_RETRIES})...`);
+            return; // 在下一个轮询周期重试
+          }
+          
+          throw new Error('Failed to check status after multiple retries');
         }
+        
+        // 重置重试计数
+        retryCount = 0;
         
         const statusData = responseData;
         setProgress(statusData.progress || 0);
@@ -339,19 +413,46 @@ export default function ImageProcessor() {
             throw new Error('No images returned');
           }
         } else if (statusData.status === 'ERROR') {
+          clearInterval(pollIntervalRef.current!);
+          
+          // 提取详细错误信息
+          const errorMessage = statusData.error || 'Task processing failed';
+          
           setDebugInfo((prev: DebugInfo | null) => ({
             ...prev,
             statusError: {
-              message: 'Task processing failed',
+              message: errorMessage,
               data: statusData
             }
           }));
-          throw new Error('Task processing failed');
+          
+          // 尝试显示更有用的错误信息给用户
+          let userFriendlyError = '图像处理失败。';
+          
+          if (errorMessage.includes('server side')) {
+            userFriendlyError += '服务器处理出现问题，请稍后再试。';
+          } else if (errorMessage.includes('timeout')) {
+            userFriendlyError += '处理超时，请尝试上传更小的图片或稍后再试。';
+          } else if (errorMessage.includes('invalid')) {
+            userFriendlyError += '您的图片可能不符合处理要求，请尝试使用不同的图片。';
+          } else {
+            userFriendlyError += '请尝试使用不同的图片或稍后再试。';
+          }
+          
+          setIsProcessing(false);
+          setError(userFriendlyError);
         }
       } catch (err) {
         console.error('Error in polling:', err);
         setIsProcessing(false);
-        setError(`Failed to generate image: ${err instanceof Error ? err.message : String(err)}`);
+        
+        // 提供更友好的错误信息
+        let errorMessage = '图像生成失败';
+        if (err instanceof Error) {
+          errorMessage += `: ${err.message}`;
+        }
+        
+        setError(errorMessage);
         clearInterval(pollIntervalRef.current!);
       }
     };

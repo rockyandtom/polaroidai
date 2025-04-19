@@ -100,6 +100,33 @@ The application is fully responsive and works on:
 - Tablets
 - Mobile phones
 
+## 🔍 常见问题排查
+
+### 任务处理失败 (Task processing failed)
+
+如果遇到图片处理失败，状态返回"ERROR"，可能的原因和解决方案：
+
+1. **服务器处理失败**:
+   - 检查图片大小和格式是否合适，建议使用JPG/JPEG/PNG格式，大小控制在5MB以内
+   - 尝试使用不同的图片
+   - 稍后再试，服务器可能暂时负载过高
+
+2. **超时问题**:
+   - 上传更小的图片
+   - 检查网络连接
+   - 服务器处理时间可能较长，增加轮询超时时间
+
+3. **API配置问题**:
+   - 确保环境变量正确设置
+   - 检查API密钥是否有效
+   - 验证WEBAPP_ID和NODE_ID是否匹配
+
+### 其他常见问题
+
+- **图片上传失败**: 确保图片格式支持且大小合适，网络连接稳定
+- **无法启动生成流程**: 可能是API密钥问题或服务器端接口变更，检查环境变量配置
+- **轮询状态失败**: 增加重试机制，检查网络连接，确保API有效
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
