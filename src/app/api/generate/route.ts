@@ -3,11 +3,11 @@ import axios from 'axios';
 import logger from '@/lib/logger';
 import { withApiMonitoring, logEnvironmentVariables } from '@/lib/api-middleware';
 
-// 硬编码密钥（临时解决方案）
-const API_BASE_URL = 'https://www.runninghub.cn';
-const API_KEY = 'fb88fac46b0349c1986c9cbb4f14d44e';
-const WEBAPP_ID = '1912088541617422337';
-const NODE_ID = '226';
+// 从环境变量中获取配置，但保留硬编码作为备份
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.runninghub.cn';
+const API_KEY = process.env.RUNNINGHUB_API_KEY || process.env.NEXT_PUBLIC_RUNNINGHUB_API_KEY || 'fb88fac46b0349c1986c9cbb4f14d44e';
+const WEBAPP_ID = process.env.RUNNINGHUB_WEBAPP_ID || process.env.NEXT_PUBLIC_RUNNINGHUB_WEBAPP_ID || '1912088541617422337';
+const NODE_ID = process.env.RUNNINGHUB_NODE_ID || process.env.NEXT_PUBLIC_RUNNINGHUB_NODE_ID || '226';
 
 /**
  * 处理生成请求的核心逻辑
