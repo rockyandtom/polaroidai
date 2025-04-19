@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 250, 250, 250;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  min-height: 100vh;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-medium transition-colors duration-300;
+  }
+  
+  .btn-primary {
+    @apply bg-polaroid-blue text-white hover:bg-blue-700;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+  }
+  
+  .btn-danger {
+    @apply bg-polaroid-red text-white hover:bg-red-700;
+  }
+  
+  .input-field {
+    @apply px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-polaroid-blue;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden;
+  }
+  
+  .section {
+    @apply py-12 px-4 md:px-8;
+  }
+  
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .polaroid-frame {
+    @apply bg-white p-4 shadow-lg relative;
+    transform: rotate(-2deg);
+  }
+  
+  .polaroid-frame::before {
+    content: '';
+    @apply absolute inset-0 bg-white shadow-lg -z-10;
+    transform: rotate(4deg);
+  }
+} 
