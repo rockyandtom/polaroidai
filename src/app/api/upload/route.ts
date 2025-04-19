@@ -3,8 +3,9 @@ import axios from 'axios';
 import logger from '@/lib/logger';
 import { withApiMonitoring, logEnvironmentVariables } from '@/lib/api-middleware';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://www.runninghub.cn';
-const API_KEY = process.env.RUNNINGHUB_API_KEY || process.env.NEXT_PUBLIC_RUNNINGHUB_API_KEY;
+// 硬编码密钥（临时解决方案）
+const API_BASE_URL = 'https://www.runninghub.cn';
+const API_KEY = 'fb88fac46b0349c1986c9cbb4f14d44e';
 
 /**
  * 处理上传请求的核心逻辑
@@ -19,7 +20,7 @@ async function handleUpload(request: NextRequest) {
   }
 
   try {
-    // 检查API配置
+    // 检查API配置 - 使用硬编码密钥，应该总是存在
     if (!API_KEY) {
       logger.error('上传API：未配置API密钥');
       return NextResponse.json(
