@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Polaroid AI Generator Team' }],
   creator: 'rockyandtom',
   publisher: 'Instant Memories',
+  metadataBase: new URL('https://polaroidai.com'),
   robots: {
     index: true,
     follow: true,
@@ -53,6 +55,19 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-SB4ENTWG5P"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SB4ENTWG5P');
+          `}
+        </Script>
       </head>
       <body className={inter.className}>
         <main className="min-h-screen">
