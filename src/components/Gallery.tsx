@@ -23,6 +23,20 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // 监听本地存储变化的函数
+  const handleStorageChange = () => {
+    if (demoMode) return; // 如果是演示模式，不需要监听变化
+    
+    try {
+      const storedImages = localStorage.getItem('polaroidGallery');
+      if (storedImages) {
+        setImages(JSON.parse(storedImages));
+      }
+    } catch (err) {
+      console.error('Error handling storage change:', err);
+    }
+  };
+  
   // 加载图片
   useEffect(() => {
     const loadImages = async () => {
@@ -47,6 +61,19 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
     };
     
     loadImages();
+    
+    // 添加storage事件监听器
+    if (!demoMode && typeof window !== 'undefined') {
+      // 在客户端环境下创建自定义事件来检测localStorage的变化
+      const intervalId = setInterval(() => {
+        handleStorageChange();
+      }, 2000); // 每2秒检查一次
+      
+      // 清理函数
+      return () => {
+        clearInterval(intervalId);
+      };
+    }
   }, [demoMode]);
   
   // 切换图片选择

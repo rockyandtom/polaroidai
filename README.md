@@ -8,6 +8,9 @@ A web application that transforms user-uploaded images into Polaroid-style artwo
 - **AI Processing**: Utilizes RunningHub's AI model to convert images to Polaroid style
 - **Gallery**: Showcases user-generated images with download functionality
 - **Reviews**: Allows users to leave feedback on their experience
+- **Direct Download**: Images can be directly downloaded to local device with one click
+- **Auto-Save**: Generated images are automatically saved to gallery for future viewing
+- **Gallery Management**: Gallery displays up to 30 most recent generated images
 
 ## 🚀 Live Demo
 
@@ -84,7 +87,8 @@ NEXT_PUBLIC_API_BASE_URL=https://www.runninghub.cn
 4. An AI task is initiated to transform the image
 5. The application polls for status updates
 6. When processing is complete, the transformed image is displayed
-7. User can download the result or add it to the gallery
+7. The image is automatically saved to the gallery (up to 30 most recent images)
+8. User can download the result directly to their device
 
 ## 🧩 Core Components
 
@@ -133,4 +137,21 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🌟 最近更新
+
+### 图片功能增强
+
+- **直接下载功能**: 点击"Download"按钮时，图片现在会直接下载到本地设备，无需额外点击保存
+- **自动保存到Gallery**: 每次生成的图片会自动保存到Gallery中，无需手动添加
+- **Gallery优化管理**: 
+  - Gallery最多显示30张最新生成的图片
+  - 新图片总是显示在最前面
+  - 实时更新显示，无需刷新页面
+
+### 使用提示
+
+- Gallery区域会自动显示您生成的所有图片（最多30张）
+- 您可以选择单张或多张图片进行批量下载
+- 下载功能现在支持直接保存到您的设备，无需右键另存为 

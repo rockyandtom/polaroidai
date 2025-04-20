@@ -391,17 +391,18 @@ export default function ImageProcessor() {
           }));
           
           if (resultData.images && resultData.images.length > 0) {
-            setProcessedImage(resultData.images[0]);
+            const imageUrl = resultData.images[0];
+            setProcessedImage(imageUrl);
             setIsProcessing(false);
             
             // 记录成功图像URL
             setDebugInfo((prev: DebugInfo | null) => ({
               ...prev,
-              successImage: resultData.images[0]
+              successImage: imageUrl
             }));
             
-            // 添加到 gallery 的逻辑可以在这里
-            saveToGallery(resultData.images[0]);
+            // 添加到 gallery
+            saveToGallery(imageUrl);
           } else {
             setDebugInfo((prev: DebugInfo | null) => ({
               ...prev,
@@ -465,9 +466,21 @@ export default function ImageProcessor() {
   // 保存到画廊
   const saveToGallery = async (imageUrl: string) => {
     try {
-      // 这里可以实现保存到画廊的逻辑
-      // 例如发送请求到后端 API 或者存储在本地存储中
-      console.log('Saving to gallery:', imageUrl);
+      // 从本地存储中获取当前画廊图片
+      const storedImages = localStorage.getItem('polaroidGallery');
+      let galleryImages: string[] = storedImages ? JSON.parse(storedImages) : [];
+      
+      // 将新图片添加到开头，确保最新的图片在前面
+      galleryImages.unshift(imageUrl);
+      
+      // 限制最多保存30张图片
+      if (galleryImages.length > 30) {
+        galleryImages = galleryImages.slice(0, 30);
+      }
+      
+      // 保存到本地存储
+      localStorage.setItem('polaroidGallery', JSON.stringify(galleryImages));
+      console.log('Saved to gallery:', imageUrl);
     } catch (err) {
       console.error('Error saving to gallery:', err);
     }

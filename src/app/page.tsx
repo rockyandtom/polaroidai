@@ -8,7 +8,7 @@ export default function Home() {
     <>
       <Header />
       <ImageProcessor />
-      <Gallery demoMode={true} />
+      <Gallery demoMode={false} />
       <Reviews />
     </>
   );

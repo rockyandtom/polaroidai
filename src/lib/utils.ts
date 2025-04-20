@@ -2,12 +2,32 @@ import JSZip from 'jszip';
 
 // 从图像 URL 创建可下载链接
 export function createDownloadLink(url: string, filename: string): void {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // 创建一个新的 XMLHttpRequest
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.responseType = 'blob';
+  
+  xhr.onload = function() {
+    if (this.status === 200) {
+      // 创建一个新的URL对象
+      const blobUrl = URL.createObjectURL(this.response);
+      
+      // 创建一个链接元素并触发下载
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
+    }
+  };
+  
+  xhr.send();
 }
 
 // 创建并下载多个图像的 ZIP 文件
