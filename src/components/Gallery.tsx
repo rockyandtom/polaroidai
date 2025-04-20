@@ -124,15 +124,15 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
         
         {/* 选择控制 */}
         {images.length > 0 && (
-          <div className="flex flex-wrap justify-between items-center mb-6">
-            <div className="text-sm text-gray-600 mb-4 md:mb-0">
+          <div className="flex flex-col sm:flex-row flex-wrap justify-between items-center mb-6">
+            <div className="text-sm text-gray-600 mb-4 w-full sm:w-auto text-center sm:text-left">
               {selectedImages.length} of {images.length} selected
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
               <button 
                 onClick={selectAll}
-                className="btn btn-secondary text-sm"
+                className="btn btn-secondary text-sm px-3 py-1.5"
                 disabled={selectedImages.length === images.length}
               >
                 Select All
@@ -140,15 +140,15 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
               
               <button 
                 onClick={clearSelection}
-                className="btn btn-secondary text-sm"
+                className="btn btn-secondary text-sm px-3 py-1.5"
                 disabled={selectedImages.length === 0}
               >
-                Clear Selection
+                Clear
               </button>
               
               <button 
                 onClick={downloadSelected}
-                className="btn btn-primary text-sm"
+                className="btn btn-primary text-sm px-3 py-1.5"
                 disabled={selectedImages.length === 0}
               >
                 Download Selected
@@ -163,7 +163,7 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
             <div className="w-16 h-16 border-4 border-polaroid-blue border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : images.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
             {images.map((imageUrl, index) => (
               <div 
                 key={`${imageUrl}-${index}`}
@@ -172,24 +172,25 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
                 }`}
                 onClick={() => toggleImageSelection(imageUrl)}
               >
-                <div className="polaroid-frame p-3 pb-10 bg-white shadow-md">
+                <div className="polaroid-frame p-2 sm:p-3 pb-8 sm:pb-10 bg-white shadow-md">
                   <div className="relative aspect-square w-full">
                     <Image
                       src={imageUrl}
                       alt={`Polaroid image ${index + 1}`}
                       fill
                       className="object-cover rounded"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                     />
                   </div>
-                  <p className="absolute bottom-3 left-0 right-0 text-center text-sm text-gray-700">
+                  <p className="absolute bottom-2 sm:bottom-3 left-0 right-0 text-center text-xs sm:text-sm text-gray-700">
                     {demoMode ? `Demo ${index + 1}` : `Creation ${index + 1}`}
                   </p>
                 </div>
                 
                 {/* 选择指示器 */}
                 {selectedImages.includes(imageUrl) && (
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-polaroid-blue rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="absolute top-2 right-2 w-5 h-5 sm:w-6 sm:h-6 bg-polaroid-blue rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>

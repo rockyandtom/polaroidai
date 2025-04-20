@@ -524,7 +524,7 @@ export default function ImageProcessor() {
           Transform Your Photo
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
           {/* 原始图像区域 */}
           <div className="flex flex-col items-center">
             <h3 className="text-xl font-semibold mb-4">Original Photo</h3>
@@ -532,7 +532,7 @@ export default function ImageProcessor() {
             <div className="w-full aspect-square max-w-md bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden mb-4 relative">
               {isUploading ? (
                 <div className="text-center p-6">
-                  <div className="w-16 h-16 border-4 border-polaroid-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-polaroid-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                   <p>Uploading...</p>
                 </div>
               ) : originalImage ? (
@@ -541,21 +541,22 @@ export default function ImageProcessor() {
                   alt="Original image" 
                   fill
                   className="object-contain"
+                  sizes="(max-width: 768px) 90vw, 50vw"
                 />
               ) : (
-                <div className="text-center p-6">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center p-4 md:p-6">
+                  <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <p>No image selected</p>
+                  <p className="text-sm md:text-base">No image selected</p>
                 </div>
               )}
             </div>
             
-            <div className="flex gap-4 mt-4">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4 mt-2 md:mt-4">
               <button 
                 onClick={triggerFileInput} 
-                className="btn btn-primary"
+                className="btn btn-primary text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
                 disabled={isUploading || isProcessing}
               >
                 {originalImage ? 'Change Photo' : 'Upload Photo'}
@@ -564,7 +565,7 @@ export default function ImageProcessor() {
               {originalImage && (
                 <button 
                   onClick={resetAll} 
-                  className="btn btn-secondary"
+                  className="btn btn-secondary text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
                   disabled={isUploading || isProcessing}
                 >
                   Clear
@@ -582,15 +583,15 @@ export default function ImageProcessor() {
           </div>
           
           {/* 处理后图像区域 */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center mt-6 md:mt-0">
             <h3 className="text-xl font-semibold mb-4">Polaroid Result</h3>
             
             <div className="w-full aspect-square max-w-md bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden mb-4 relative">
               {isProcessing ? (
-                <div className="text-center p-6">
-                  <div className="w-16 h-16 border-4 border-polaroid-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p>Generating Polaroid... {progress}%</p>
-                  <div className="w-full h-2 bg-gray-200 rounded-full mt-4">
+                <div className="text-center p-4 md:p-6">
+                  <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-polaroid-blue border-t-transparent rounded-full animate-spin mx-auto mb-2 md:mb-4"></div>
+                  <p className="text-sm md:text-base">Generating Polaroid... {progress}%</p>
+                  <div className="w-full h-2 bg-gray-200 rounded-full mt-2 md:mt-4">
                     <div 
                       className="h-full bg-polaroid-blue rounded-full" 
                       style={{ width: `${progress}%` }}
@@ -598,30 +599,31 @@ export default function ImageProcessor() {
                   </div>
                 </div>
               ) : processedImage ? (
-                <div className="polaroid-frame w-full h-full flex items-center justify-center p-4">
+                <div className="polaroid-frame w-full h-full flex items-center justify-center p-3 md:p-4">
                   <div className="relative w-full h-full">
                     <Image 
                       src={processedImage} 
                       alt="Polaroid image" 
                       fill
                       className="object-contain"
+                      sizes="(max-width: 768px) 90vw, 50vw"
                     />
                   </div>
                 </div>
               ) : (
-                <div className="text-center p-6">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center p-4 md:p-6">
+                  <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6m3-3V5a2 2 0 012-2h4a2 2 0 012 2v6m-5 3v6" />
                   </svg>
-                  <p>{originalImage ? 'Ready to transform' : 'Upload an image first'}</p>
+                  <p className="text-sm md:text-base">{originalImage ? 'Ready to transform' : 'Upload an image first'}</p>
                 </div>
               )}
             </div>
             
-            <div className="flex gap-4 mt-4">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4 mt-2 md:mt-4">
               <button 
                 onClick={generatePolaroid} 
-                className="btn btn-primary"
+                className="btn btn-primary text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
                 disabled={!originalImage || isProcessing || isUploading}
               >
                 Generate Polaroid
@@ -630,7 +632,7 @@ export default function ImageProcessor() {
               {processedImage && (
                 <button 
                   onClick={downloadImage} 
-                  className="btn btn-secondary"
+                  className="btn btn-secondary text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
                 >
                   Download
                 </button>

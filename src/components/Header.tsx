@@ -5,9 +5,26 @@ import Image from 'next/image';
 
 export default function Header() {
   const [mounted, setMounted] = useState(false);
+  const [latestImage, setLatestImage] = useState<string | null>(null);
   
   useEffect(() => {
     setMounted(true);
+    
+    // 获取最新生成的图片
+    if (typeof window !== 'undefined') {
+      try {
+        const storedImages = localStorage.getItem('polaroidGallery');
+        if (storedImages) {
+          const images = JSON.parse(storedImages);
+          if (images.length > 0) {
+            // 获取第一张图片（最新的）
+            setLatestImage(images[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Error getting latest image:', err);
+      }
+    }
   }, []);
   
   return (
@@ -17,17 +34,28 @@ export default function Header() {
           <div className="inline-block mb-6">
             <div className="polaroid-frame bg-white px-4 pt-4 pb-12 shadow-lg">
               <div className="relative w-32 h-32 md:w-48 md:h-48 overflow-hidden">
-                <Image 
-                  src="/logo-placeholder.jpg" 
-                  alt="Polaroid Logo" 
-                  width={200} 
-                  height={200}
-                  className="object-cover"
-                  priority
-                />
+                {latestImage ? (
+                  <Image 
+                    src={latestImage} 
+                    alt="Your Latest Polaroid" 
+                    width={200} 
+                    height={200}
+                    className="object-cover rounded"
+                    priority
+                  />
+                ) : (
+                  <Image 
+                    src="/logo-placeholder.jpg" 
+                    alt="Polaroid Logo" 
+                    width={200} 
+                    height={200}
+                    className="object-cover"
+                    priority
+                  />
+                )}
               </div>
               <p className="absolute bottom-4 left-0 right-0 text-center font-handwriting text-lg">
-                Instant Memories
+                {latestImage ? 'Your Latest' : 'Instant Memories'}
               </p>
             </div>
           </div>
