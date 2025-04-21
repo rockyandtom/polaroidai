@@ -53,6 +53,14 @@ interface DebugInfo {
     data?: any;
   };
   successImage?: string;
+  serverSaveResponse?: any;
+  serverSaveError?: {
+    status?: number;
+    message?: string;
+  };
+  galleryError?: {
+    message?: string;
+  };
 }
 
 export default function ImageProcessor() {
@@ -466,9 +474,52 @@ export default function ImageProcessor() {
   // 保存到画廊
   const saveToGallery = async (imageUrl: string) => {
     try {
+      console.log('开始保存图片到画廊:', imageUrl.substring(0, 50) + '...');
+      
+      // 先尝试保存到服务器
+      try {
+        console.log('开始保存到服务器...');
+        const response = await fetch('/api/gallery/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('服务器保存图片失败:', response.status, errorText);
+          setDebugInfo((prev: DebugInfo | null) => ({
+            ...prev,
+            serverSaveError: {
+              status: response.status,
+              message: errorText
+            }
+          }));
+        } else {
+          const result = await response.json();
+          console.log('服务器保存成功:', result);
+          setDebugInfo((prev: DebugInfo | null) => ({
+            ...prev,
+            serverSaveResponse: result
+          }));
+        }
+      } catch (serverErr) {
+        console.error('服务器保存请求失败:', serverErr);
+        setDebugInfo((prev: DebugInfo | null) => ({
+          ...prev,
+          serverSaveError: {
+            message: serverErr instanceof Error ? serverErr.message : String(serverErr)
+          }
+        }));
+      }
+      
       // 从本地存储中获取当前画廊图片
       const storedImages = localStorage.getItem('polaroidGallery');
       let galleryImages: string[] = storedImages ? JSON.parse(storedImages) : [];
+      
+      console.log('当前本地存储中有', galleryImages.length, '张图片');
       
       // 将新图片添加到开头，确保最新的图片在前面
       galleryImages.unshift(imageUrl);
@@ -480,28 +531,17 @@ export default function ImageProcessor() {
       
       // 保存到本地存储
       localStorage.setItem('polaroidGallery', JSON.stringify(galleryImages));
+      console.log('成功保存到本地存储，现在有', galleryImages.length, '张图片');
       
-      // 同时保存到服务器 - 发送API请求保存图片URL
-      try {
-        const response = await fetch('/api/gallery/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ imageUrl }),
-        });
-        
-        if (!response.ok) {
-          console.error('服务器保存图片失败:', await response.text());
-        }
-      } catch (serverErr) {
-        console.error('服务器保存请求失败:', serverErr);
-        // 即使服务器保存失败，本地保存仍然成功
-      }
-      
-      console.log('Saved to gallery:', imageUrl);
+      console.log('Saved to gallery:', imageUrl.substring(0, 50) + '...');
     } catch (err) {
       console.error('Error saving to gallery:', err);
+      setDebugInfo((prev: DebugInfo | null) => ({
+        ...prev,
+        galleryError: {
+          message: err instanceof Error ? err.message : String(err)
+        }
+      }));
     }
   };
   

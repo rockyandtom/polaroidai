@@ -8,7 +8,16 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.polaroidai.art',
+        port: '',
+        pathname: '/**',
+      },
     ],
+  },
+  env: {
+    STORAGE_TYPE: process.env.STORAGE_TYPE || 'file',
   },
 };
 

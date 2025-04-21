@@ -48,26 +48,25 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
       if (response.ok) {
         const data = await response.json();
         if (data.images && Array.isArray(data.images)) {
+          console.log('成功从服务器获取图片，数量:', data.images.length);
           setImages(data.images);
           
           // 同时更新本地存储，保持两者同步
-          localStorage.setItem('polaroidGallery', JSON.stringify(data.images));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('polaroidGallery', JSON.stringify(data.images));
+            console.log('本地存储已更新，与服务器同步');
+          }
+          return true;
         }
       } else {
-        // 如果服务器获取失败，回退到本地存储
-        const storedImages = localStorage.getItem('polaroidGallery');
-        if (storedImages) {
-          setImages(JSON.parse(storedImages));
-        }
+        console.error('服务器获取图片失败:', response.status);
+        return false;
       }
     } catch (err) {
       console.error('Error fetching gallery images from server:', err);
-      // 发生错误时回退到本地存储
-      const storedImages = localStorage.getItem('polaroidGallery');
-      if (storedImages) {
-        setImages(JSON.parse(storedImages));
-      }
+      return false;
     }
+    return false;
   };
   
   // Load images
@@ -81,7 +80,18 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
           setImages(DEMO_IMAGES);
         } else {
           // 优先从服务器获取图片
-          await fetchGalleryImages();
+          const serverSuccess = await fetchGalleryImages();
+          
+          // 如果服务器获取失败，尝试从本地存储获取
+          if (!serverSuccess && typeof window !== 'undefined') {
+            console.log('服务器获取失败，尝试从本地存储加载');
+            const storedImages = localStorage.getItem('polaroidGallery');
+            if (storedImages) {
+              const parsedImages = JSON.parse(storedImages);
+              console.log('从本地存储加载图片，数量:', parsedImages.length);
+              setImages(parsedImages);
+            }
+          }
         }
       } catch (err) {
         console.error('Error loading gallery images:', err);

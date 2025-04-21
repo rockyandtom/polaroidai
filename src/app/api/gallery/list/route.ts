@@ -1,33 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import logger from '@/lib/logger';
-
-// 图片存储文件路径
-const GALLERY_FILE_PATH = path.join(process.cwd(), 'data', 'gallery.json');
-
-// 从文件加载图片数据
-function loadGalleryData(): string[] {
-  try {
-    if (!fs.existsSync(GALLERY_FILE_PATH)) {
-      return [];
-    }
-    
-    const data = fs.readFileSync(GALLERY_FILE_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    logger.error('加载图片数据失败', error);
-    return [];
-  }
-}
+import { storageService } from '@/lib/storage';
 
 /**
  * 获取所有保存的图片URL
  */
 export async function GET(request: NextRequest) {
+  logger.info('收到获取图片列表请求');
+  
   try {
-    // 加载图片数据
-    const images = loadGalleryData();
+    // 使用存储服务获取图片列表
+    const images = await storageService.getGalleryImages();
+    logger.info(`返回 ${images.length} 张图片`);
     
     return NextResponse.json({ images });
   } catch (error: any) {
