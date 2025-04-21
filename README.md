@@ -149,6 +149,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
   - Gallery最多显示30张最新生成的图片
   - 新图片总是显示在最前面
   - 实时更新显示，无需刷新页面
+- **服务器持久化存储**:
+  - 生成的图片URL现在会同时保存到服务器和本地浏览器
+  - 即使清除浏览器缓存或使用新设备，之前生成的图片仍可在Gallery中查看
+  - 确保图片在不同设备和浏览器会话间保持一致
 
 ### 使用提示
 

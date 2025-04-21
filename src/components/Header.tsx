@@ -10,14 +10,14 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
     
-    // 获取最新生成的图片
+    // Get the latest generated image
     if (typeof window !== 'undefined') {
       try {
         const storedImages = localStorage.getItem('polaroidGallery');
         if (storedImages) {
           const images = JSON.parse(storedImages);
           if (images.length > 0) {
-            // 获取第一张图片（最新的）
+            // Get the first image (the latest one)
             setLatestImage(images[0]);
           }
         }

@@ -138,13 +138,13 @@ export default function ImageProcessor() {
           // 否则等待一秒后重试
           uploadAttempts++;
           if (uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
-            console.warn(`上传失败，正在重试 (${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS})...`);
+            console.warn(`Upload failed, retrying (${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS})...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         } catch (error) {
           uploadAttempts++;
           if (uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
-            console.warn(`上传异常，正在重试 (${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS})...`, error);
+            console.warn(`Upload error, retrying (${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS})...`, error);
             await new Promise(resolve => setTimeout(resolve, 1000));
           } else {
             throw error;
@@ -162,7 +162,7 @@ export default function ImageProcessor() {
             data: errorData
           }
         }));
-        throw new Error('图片上传失败，请重试');
+        throw new Error('Image upload failed, please try again');
       }
       
       const uploadData = await uploadResponse.json();
@@ -182,7 +182,7 @@ export default function ImageProcessor() {
             message: uploadData.msg
           }
         }));
-        throw new Error(uploadData.msg || '上传失败');
+        throw new Error(uploadData.msg || 'Upload failed');
       }
       
       const imageId = uploadData.data.fileName;
@@ -215,13 +215,13 @@ export default function ImageProcessor() {
           // 否则等待一秒后重试
           generateAttempts++;
           if (generateAttempts < MAX_GENERATE_ATTEMPTS) {
-            console.warn(`生成请求失败，正在重试 (${generateAttempts}/${MAX_GENERATE_ATTEMPTS})...`);
+            console.warn(`Generation request failed, retrying (${generateAttempts}/${MAX_GENERATE_ATTEMPTS})...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         } catch (error) {
           generateAttempts++;
           if (generateAttempts < MAX_GENERATE_ATTEMPTS) {
-            console.warn(`生成请求异常，正在重试 (${generateAttempts}/${MAX_GENERATE_ATTEMPTS})...`, error);
+            console.warn(`Generation request error, retrying (${generateAttempts}/${MAX_GENERATE_ATTEMPTS})...`, error);
             await new Promise(resolve => setTimeout(resolve, 1000));
           } else {
             throw error;
@@ -239,7 +239,7 @@ export default function ImageProcessor() {
             data: errorData
           }
         }));
-        throw new Error('无法启动图像生成流程，请重试');
+        throw new Error('Unable to start image generation process, please try again');
       }
       
       const generateData = await generateResponse.json();
@@ -259,7 +259,7 @@ export default function ImageProcessor() {
             message: generateData.msg
           }
         }));
-        throw new Error(generateData.msg || '生成失败');
+        throw new Error(generateData.msg || 'Generation failed');
       }
       
       const taskId = generateData.data.taskId;
@@ -278,7 +278,7 @@ export default function ImageProcessor() {
       setIsProcessing(false);
       
       // 提供更友好的错误信息
-      let errorMessage = '处理过程中出错';
+      let errorMessage = 'Error occurred during processing';
       if (err instanceof Error) {
         errorMessage = err.message;
       }
@@ -329,7 +329,7 @@ export default function ImageProcessor() {
           // 重试逻辑
           retryCount++;
           if (retryCount <= MAX_RETRIES) {
-            console.warn(`状态检查失败，正在重试 (${retryCount}/${MAX_RETRIES})...`);
+            console.warn(`Status check failed, retrying (${retryCount}/${MAX_RETRIES})...`);
             return; // 在下一个轮询周期重试
           }
           
@@ -428,16 +428,16 @@ export default function ImageProcessor() {
           }));
           
           // 尝试显示更有用的错误信息给用户
-          let userFriendlyError = '图像处理失败。';
+          let userFriendlyError = 'Image processing failed. ';
           
           if (errorMessage.includes('server side')) {
-            userFriendlyError += '服务器处理出现问题，请稍后再试。';
+            userFriendlyError = 'Server error. Please try with a different image.';
           } else if (errorMessage.includes('timeout')) {
-            userFriendlyError += '处理超时，请尝试上传更小的图片或稍后再试。';
+            userFriendlyError = 'Processing timed out. Please try with a smaller image or try again later.';
           } else if (errorMessage.includes('invalid')) {
-            userFriendlyError += '您的图片可能不符合处理要求，请尝试使用不同的图片。';
+            userFriendlyError = 'Your image may not meet the processing requirements. Please try with a different image.';
           } else {
-            userFriendlyError += '请尝试使用不同的图片或稍后再试。';
+            userFriendlyError = 'Please try with a different image or try again later.';
           }
           
           setIsProcessing(false);
@@ -448,7 +448,7 @@ export default function ImageProcessor() {
         setIsProcessing(false);
         
         // 提供更友好的错误信息
-        let errorMessage = '图像生成失败';
+        let errorMessage = 'Image generation failed';
         if (err instanceof Error) {
           errorMessage += `: ${err.message}`;
         }
@@ -480,6 +480,25 @@ export default function ImageProcessor() {
       
       // 保存到本地存储
       localStorage.setItem('polaroidGallery', JSON.stringify(galleryImages));
+      
+      // 同时保存到服务器 - 发送API请求保存图片URL
+      try {
+        const response = await fetch('/api/gallery/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl }),
+        });
+        
+        if (!response.ok) {
+          console.error('服务器保存图片失败:', await response.text());
+        }
+      } catch (serverErr) {
+        console.error('服务器保存请求失败:', serverErr);
+        // 即使服务器保存失败，本地保存仍然成功
+      }
+      
       console.log('Saved to gallery:', imageUrl);
     } catch (err) {
       console.error('Error saving to gallery:', err);
@@ -649,7 +668,7 @@ export default function ImageProcessor() {
               onClick={() => setDebugMode(!debugMode)}
               className="ml-4 underline text-sm"
             >
-              {debugMode ? '隐藏调试信息' : '显示调试信息'}
+              {debugMode ? 'Hide Debug Info' : 'Show Debug Info'}
             </button>
           </div>
         )}
@@ -657,7 +676,7 @@ export default function ImageProcessor() {
         {/* 调试信息 */}
         {debugMode && debugInfo && (
           <div className="mt-4 p-4 bg-gray-100 rounded-lg overflow-auto max-h-96">
-            <h3 className="text-lg font-semibold mb-2">调试信息</h3>
+            <h3 className="text-lg font-semibold mb-2">Debug Information</h3>
             <pre className="text-xs">{JSON.stringify(debugInfo, null, 2)}</pre>
           </div>
         )}

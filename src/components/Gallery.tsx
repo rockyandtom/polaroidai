@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { downloadImagesAsZip } from '@/lib/utils';
 
-// 模拟数据
+// Mock data
 const DEMO_IMAGES = [
   '/demo/polaroid1.jpg',
   '/demo/polaroid2.jpg',
@@ -23,35 +23,65 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 监听本地存储变化的函数
+  // Monitor local storage changes
   const handleStorageChange = () => {
-    if (demoMode) return; // 如果是演示模式，不需要监听变化
+    if (demoMode) return; // No need to monitor changes in demo mode
     
     try {
-      const storedImages = localStorage.getItem('polaroidGallery');
-      if (storedImages) {
-        setImages(JSON.parse(storedImages));
-      }
+      // 获取服务器保存的图片
+      fetchGalleryImages();
     } catch (err) {
       console.error('Error handling storage change:', err);
     }
   };
   
-  // 加载图片
+  // 从服务器获取Gallery图片
+  const fetchGalleryImages = async () => {
+    try {
+      const response = await fetch('/api/gallery/list', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.images && Array.isArray(data.images)) {
+          setImages(data.images);
+          
+          // 同时更新本地存储，保持两者同步
+          localStorage.setItem('polaroidGallery', JSON.stringify(data.images));
+        }
+      } else {
+        // 如果服务器获取失败，回退到本地存储
+        const storedImages = localStorage.getItem('polaroidGallery');
+        if (storedImages) {
+          setImages(JSON.parse(storedImages));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching gallery images from server:', err);
+      // 发生错误时回退到本地存储
+      const storedImages = localStorage.getItem('polaroidGallery');
+      if (storedImages) {
+        setImages(JSON.parse(storedImages));
+      }
+    }
+  };
+  
+  // Load images
   useEffect(() => {
     const loadImages = async () => {
       setIsLoading(true);
       
       try {
         if (demoMode) {
-          // 使用演示图片
+          // Use demo images
           setImages(DEMO_IMAGES);
         } else {
-          // 从浏览器存储中获取用户生成的图片
-          const storedImages = localStorage.getItem('polaroidGallery');
-          if (storedImages) {
-            setImages(JSON.parse(storedImages));
-          }
+          // 优先从服务器获取图片
+          await fetchGalleryImages();
         }
       } catch (err) {
         console.error('Error loading gallery images:', err);
@@ -62,21 +92,21 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
     
     loadImages();
     
-    // 添加storage事件监听器
+    // Add storage event listener
     if (!demoMode && typeof window !== 'undefined') {
-      // 在客户端环境下创建自定义事件来检测localStorage的变化
+      // Create custom event to detect localStorage changes in client environment
       const intervalId = setInterval(() => {
         handleStorageChange();
-      }, 2000); // 每2秒检查一次
+      }, 2000); // Check every 2 seconds
       
-      // 清理函数
+      // Cleanup function
       return () => {
         clearInterval(intervalId);
       };
     }
   }, [demoMode]);
   
-  // 切换图片选择
+  // Toggle image selection
   const toggleImageSelection = (imageUrl: string) => {
     setSelectedImages(prev => 
       prev.includes(imageUrl)
@@ -85,7 +115,7 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
     );
   };
   
-  // 下载选中的图片
+  // Download selected images
   const downloadSelected = async () => {
     if (selectedImages.length === 0) return;
     
@@ -99,12 +129,12 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
     }
   };
   
-  // 清除选择
+  // Clear selection
   const clearSelection = () => {
     setSelectedImages([]);
   };
   
-  // 全选
+  // Select all
   const selectAll = () => {
     setSelectedImages([...images]);
   };
@@ -122,7 +152,7 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
             : 'Your Polaroid creations will appear here. Select and download your favorites!'}
         </p>
         
-        {/* 选择控制 */}
+        {/* Selection controls */}
         {images.length > 0 && (
           <div className="flex flex-col sm:flex-row flex-wrap justify-between items-center mb-6">
             <div className="text-sm text-gray-600 mb-4 w-full sm:w-auto text-center sm:text-left">
@@ -157,7 +187,7 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
           </div>
         )}
         
-        {/* 图片网格 */}
+        {/* Image grid */}
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-16 h-16 border-4 border-polaroid-blue border-t-transparent rounded-full animate-spin"></div>
@@ -187,7 +217,7 @@ export default function Gallery({ demoMode = true }: GalleryProps) {
                   </p>
                 </div>
                 
-                {/* 选择指示器 */}
+                {/* Selection indicator */}
                 {selectedImages.includes(imageUrl) && (
                   <div className="absolute top-2 right-2 w-5 h-5 sm:w-6 sm:h-6 bg-polaroid-blue rounded-full flex items-center justify-center">
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
